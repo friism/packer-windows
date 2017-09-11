@@ -1,3 +1,4 @@
+$ProgressPreference = 'SilentlyContinue'
 Enable-PSRemoting -Force
 winrm quickconfig -q
 winrm quickconfig -transport:http

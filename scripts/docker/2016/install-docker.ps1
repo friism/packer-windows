@@ -1,9 +1,12 @@
-Write-Host "Install-PackageProvider ..."
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-Write-Host "Install-Module ..."
-Install-Module -Name DockerMsftProviderInsider -Force
-Write-Host "Install-Package ..."
-Set-PSRepository -InstallationPolicy Trusted -Name PSGallery
-Install-Package -Name docker -ProviderName DockerMsftProviderInsider -Force
-Set-PSRepository -InstallationPolicy Untrusted -Name PSGallery
+$ProgressPreference = 'SilentlyContinue'
+
+Invoke-WebRequest "https://download.docker.com/win/static/test/x86_64/docker-$Env:dockerVersion.zip" -UseBasicParsing -OutFile docker.zip
+Expand-Archive docker.zip -DestinationPath $Env:ProgramFiles
+Remove-Item -Force docker.zip
+
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$($env:ProgramFiles)\docker", [EnvironmentVariableTarget]::Machine)
+$env:Path = $env:Path + ";$($env:ProgramFiles)\docker"
+
+dockerd.exe --register-service
+
 Start-Service docker

@@ -1,3 +1,4 @@
+$ProgressPreference = 'SilentlyContinue'
 Write-Host "Disabling Screensaver"
 Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name ScreenSaveActive -Value 0 -Type DWord
 & powercfg -x -monitor-timeout-ac 0

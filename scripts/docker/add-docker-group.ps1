@@ -1,3 +1,4 @@
+$ProgressPreference = 'SilentlyContinue'
 Write-Host Creating group docker
 net localgroup docker /add
 $username = $env:USERNAME

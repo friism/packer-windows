@@ -1,111 +1,53 @@
 {
   "builders": [
     {
-      "vm_name":"WindowsServer2016Insider",
+      "vm_name": "WindowsServer2016Insider",
       "type": "hyperv-iso",
       "disk_size": 41440,
       "boot_wait": "0s",
-      "guest_additions_mode":"disable",
-      "iso_url": "{{user `iso_url`}}",
-      "iso_checksum_type": "{{user `iso_checksum_type`}}",
-      "iso_checksum": "{{user `iso_checksum`}}",
-      "floppy_files": [
-        "{{user `autounattend`}}",
-        "./scripts/disable-screensaver.ps1",
-        "./scripts/disable-winrm.ps1",
-        "./scripts/enable-winrm.ps1"
+      "boot_command": [
+        "a<enter><wait>a<enter><wait>a<enter><wait>a<enter>"
       ],
-      "communicator":"winrm",
-      "winrm_username": "vagrant",
-      "winrm_password": "vagrant",
-      "winrm_timeout" : "4h",
-      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
-      "ram_size": 2048,
-      "cpu": 2,
-      "switch_name":"{{user `hyperv_switchname`}}",
-      "enable_secure_boot":true,
-      "enable_virtualization_extensions":true
-    },
-    {
-      "type": "vmware-iso",
-      "communicator": "winrm",
-      "iso_url": "{{user `iso_url`}}",
-      "iso_checksum_type": "{{user `iso_checksum_type`}}",
-      "iso_checksum": "{{user `iso_checksum`}}",
-      "headless": false,
-      "boot_wait": "2m",
-      "winrm_username": "vagrant",
-      "winrm_password": "vagrant",
-      "winrm_timeout": "6h",
-      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
-      "guest_os_type": "windows9srv-64",
-      "disk_size": 61440,
-      "vnc_port_min": 5900,
-      "vnc_port_max": 5980,
-      "floppy_files": [
-        "{{user `autounattend`}}",
-        "./scripts/disable-winrm.ps1",
-        "./scripts/enable-winrm.ps1"
-      ],
-      "vmx_data": {
-        "RemoteDisplay.vnc.enabled": "false",
-        "RemoteDisplay.vnc.port": "5900",
-        "memsize": "2048",
-        "numvcpus": "2",
-        "scsi0.virtualDev": "lsisas1068",
-        "virtualHW.version": "12"
-      }
-    },
-    {
-      "type": "virtualbox-iso",
-      "communicator": "winrm",
-      "iso_url": "{{user `iso_url`}}",
-      "iso_checksum_type": "{{user `iso_checksum_type`}}",
-      "iso_checksum": "{{user `iso_checksum`}}",
-      "headless": false,
-      "boot_wait": "2m",
-      "winrm_username": "vagrant",
-      "winrm_password": "vagrant",
-      "winrm_timeout": "6h",
-      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
-      "guest_os_type": "Windows2012_64",
       "guest_additions_mode": "disable",
-      "disk_size": 61440,
-      "floppy_files": [
-        "{{user `autounattend`}}",
-        "./scripts/disable-screensaver.ps1",
-        "./scripts/disable-winrm.ps1",
-        "./scripts/enable-winrm.ps1",
-        "./scripts/oracle-cert.cer"
+      "generation": 2,
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum_type": "{{user `iso_checksum_type`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "secondary_iso_images": [
+        "./windows/2016_insider/answer.iso"
       ],
-      "vboxmanage": [
-        [
-          "modifyvm",
-          "{{.Name}}",
-          "--memory",
-          "2048"
-        ],
-        [
-          "modifyvm",
-          "{{.Name}}",
-          "--cpus",
-          "2"
-        ]
-      ]
+      "communicator": "winrm",
+      "winrm_username": "vagrant",
+      "winrm_password": "vagrant",
+      "winrm_timeout": "4h",
+      "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+      "ram_size": 8192,
+      "cpu": 8,
+      "enable_dynamic_memory": true,
+      "switch_name": "{{user `hyperv_switchname`}}",
+      "enable_secure_boot": true,
+      "enable_virtualization_extensions": true,
+      "http_directory": "d:\\iso\\16278"
     }
   ],
   "provisioners": [
     {
       "type": "windows-shell",
       "scripts": [
-        "./scripts/vm-guest-tools.bat",
         "./scripts/enable-rdp.bat"
       ]
     },
     {
       "type": "powershell",
       "scripts": [
-        "./scripts/docker/2016/install-containers-feature.ps1"
+        "./scripts/docker/button-down.ps1"
+      ]
+    },
+    {
+      "type": "powershell",
+      "inline":
+      [
+        "Install-WindowsFeature -Name Containers"
       ]
     },
     {
@@ -113,38 +55,21 @@
     },
     {
       "type": "powershell",
+      "environment_vars":
+      [
+        "dockerVersion={{user `dockerVersion`}}"
+      ],
       "scripts": [
-        "./scripts/docker/add-docker-group.ps1",
         "./scripts/docker/2016/install-docker.ps1",
-        "./scripts/docker/docker-pull-local.ps1",
-        "./scripts/docker/open-docker-insecure-port.ps1",
-        "./scripts/docker/remove-docker-key-json.ps1",
-        "./scripts/docker/disable-windows-defender.ps1"
+        "./scripts/docker/add-docker-group.ps1",
+        "./scripts/docker/docker-pull-local.ps1"
       ]
-    },
-    {
-      "type": "windows-restart"
-    },
-    {
-      "type": "windows-shell",
-      "scripts": [
-        "./scripts/compile-dotnet-assemblies.bat",
-        "./scripts/compact.bat"
-      ]
-    }
-  ],
-  "post-processors": [
-    {
-      "type": "vagrant",
-      "keep_input_artifact": false,
-      "output": "windows_2016_insider_{{.Provider}}.box",
-      "vagrantfile_template": "vagrantfile-windows_2016.template"
     }
   ],
   "variables": {
     "manually_download_iso_from": "https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewserver",
     "iso_url": "https://software-download.microsoft.com/pr/Windows_InsiderPreview_Server_16267.iso",
-    "iso_checksum_type": "sha256",
+    "iso_checksum_type": "none",
     "iso_checksum": "1FA3EEED8555DD6E120727A7DB6B47B2987357B7001F6B5AF2A732A12CB61EC3",
     "autounattend": "./answer_files/2016_insider/Autounattend.xml"
   }
